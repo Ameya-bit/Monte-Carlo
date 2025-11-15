@@ -1,42 +1,56 @@
 import numpy as np
 from tqdm import trange
 
+# how light travels through a foggy or dusty material (1D)
+# clouds, smoke, interstellar dust
+# tau_tot - opacity of the material (clear sky to thick fog)
+# omega - probability of absorption
+# N - number of photon packets to simulate
 def run_mc(tau_tot, omega, N=200000):
-    # slab thickness = 1. kappa maps tau to length: kappa = tau_tot / 1 =
-    tau_tot
-    kappa = tau_tot
+    # material dimensions
+    slab_thickness = 1
+
+    kappa = tau_tot / slab_thickness
     escapes_top = 0
     total_scatterings = 0
     
     for _ in trange(N):
-        z = 0.0 # start at bottom
-        # initial upward direction mu in (0,1)
+        # photons enter through the bottom of slab
+        z = 0.0 
+  
+        # initialize initial direction randomly
         mu = np.random.rand()
         scat_count = 0
         alive = True
         while alive:
-            # draw optical depth to next interaction
+            # probability of traveling a distance without hitting
+            # anything in the material 
             d_tau = -np.log(np.random.rand())
-            # convert to physical distance (since kappa = tau/L and L=1) =>
             dz = d_tau / kappa
             dz = d_tau / kappa
+
+            # move the particle that distance
+            # after this, the photon either escapes or hits a particle
             z += mu * dz
+
+            # photon escapes through the bottom
             if z < 0.0:
-                # escaped downward (ignore or count)
                 alive = False
                 break
+            # photon escapes through the top
             if z > 1.0:
-                # escaped upward
                 escapes_top += 1
                 alive = False
                 break
-            # interaction occurs inside slab
+
+            # photon hits a particle
+            # photon is absorbed
             if np.random.rand() > omega:
-                # absorbed
                 alive = False
                 break
+            # photon scatters
             else:
-                # scattered: choose new isotropic direction
+                # new direction assigned (random scatter)
                 mu = 2.0 * np.random.rand() - 1.0
                 scat_count += 1
         total_scatterings += scat_count
@@ -50,7 +64,8 @@ def run_mc(tau_tot, omega, N=200000):
     'escape_fraction': escape_fraction,
     'mean_scatterings': mean_scatterings
     }
-# quick example
+
+
 if __name__ == '__main__':
     out = run_mc(0.5, 0.9, N=50000)
     print(out)
