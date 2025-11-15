@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from tqdm import trange
 
 # how light travels through a foggy or dusty material (1D)
@@ -66,6 +67,26 @@ def run_mc(tau_tot, omega, N=200000):
     }
 
 
-if __name__ == '__main__':
-    out = run_mc(0.5, 0.9, N=50000)
-    print(out)
+if __name__ == '__main__':  
+    params = []
+    results = []
+
+    # iterates through tau values logarithmicly
+    for tau in np.logspace(-1, 1, 30):
+        # iterates through omega values linearly
+        for omega in np.linspace(0, 0.99, 30):
+            r = run_mc(tau, omega, N=50000)
+            params.append([tau, omega])
+            results.append([r['escape_fraction'], r['mean_scatterings']])
+    
+    # Convert to DataFrame
+    df = pd.DataFrame({
+        'tau_tot': [p[0] for p in params],
+        'omega': [p[1] for p in params],
+        'escape_fraction': [r[0] for r in results],
+        'mean_scatterings': [r[1] for r in results]
+    })
+    
+    # Save to CSV
+    df.to_csv('monte_carlo_results.csv', index=False)
+    print(f"Results saved to monte_carlo_results.csv ({len(df)} rows)")
