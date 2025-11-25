@@ -22,10 +22,16 @@ class Photon:
         self.trajectory = [(self.x, self.y, self.z)]
 
     def move(self, distance):
-        """Move the photon by a given distance in its current direction."""
+        # move a specified distance
+        # use current direction
         self.x += self.ux * distance
         self.y += self.uy * distance
         self.z += self.uz * distance
         
         # Append new position to trajectory
         self.trajectory.append((self.x, self.y, self.z))
+
+    def check_boundaries(self):
+        """Check if photon has escaped the slab (z < 0 or z > 1)."""
+        if self.z < 0.0 or self.z > 1.0:
+            self.alive = False
