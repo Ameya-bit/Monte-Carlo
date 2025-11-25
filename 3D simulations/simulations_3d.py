@@ -20,3 +20,12 @@ class Photon:
         
         self.alive = True
         self.trajectory = [(self.x, self.y, self.z)]
+
+    def move(self, distance):
+        """Move the photon by a given distance in its current direction."""
+        self.x += self.ux * distance
+        self.y += self.uy * distance
+        self.z += self.uz * distance
+        
+        # Append new position to trajectory
+        self.trajectory.append((self.x, self.y, self.z))
