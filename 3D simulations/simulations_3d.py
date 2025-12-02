@@ -86,3 +86,63 @@ class Photon:
         self.ux /= norm
         self.uy /= norm
         self.uz /= norm
+
+def run_mc_3d(tau_tot, omega, g, N=10000):
+    """
+    Run 3D Monte Carlo simulation.
+    tau_tot: Optical depth of slab
+    omega: Single scattering albedo (prob of scatter vs absorption)
+    g: Asymmetry parameter
+    N: Number of photons
+    """
+    slab_thickness = 1.0
+    kappa = tau_tot / slab_thickness
+    
+    escapes_top = 0
+    escapes_bottom = 0
+    absorbed_count = 0
+    
+    # Store final positions of escaping photons for analysis
+    exit_positions_top = []
+    
+    for _ in range(N):
+        p = Photon()
+        
+        while p.alive:
+            # 1. Sample distance to next interaction
+            # d_tau = -ln(rand)
+            d_tau = -np.log(np.random.rand())
+            distance = d_tau / kappa
+            
+            # 2. Move photon
+            p.move(distance)
+            
+            # 3. Check boundaries
+            p.check_boundaries()
+            if not p.alive:
+                if p.z > 1.0:
+                    escapes_top += 1
+                    exit_positions_top.append((p.x, p.y))
+                else:
+                    escapes_bottom += 1
+                break
+                
+            # 4. Interaction (Scatter or Absorb)
+            if np.random.rand() > omega:
+                # Absorbed
+                p.alive = False
+                absorbed_count += 1
+            else:
+                # Scattered
+                p.scatter(g)
+                
+    return {
+        'tau_tot': tau_tot,
+        'omega': omega,
+        'g': g,
+        'N': N,
+        'escape_fraction_top': escapes_top / N,
+        'escape_fraction_bottom': escapes_bottom / N,
+        'absorbed_fraction': absorbed_count / N,
+        'exit_positions_top': exit_positions_top
+    }
