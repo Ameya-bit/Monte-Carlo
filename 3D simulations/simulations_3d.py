@@ -1,4 +1,7 @@
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
 
 class Photon:
     def __init__(self):
@@ -146,3 +149,48 @@ def run_mc_3d(tau_tot, omega, g, N=10000):
         'absorbed_fraction': absorbed_count / N,
         'exit_positions_top': exit_positions_top
     }
+
+if __name__ == '__main__':
+    params = []
+    results = []
+    
+    # Define parameter ranges
+    # tau: 0.1 to 10 (logarithmic)
+    taus = np.logspace(-1, 1, 10)
+    # omega: 0.0 to 0.99
+    omegas = np.linspace(0, 0.99, 10)
+    # g: 0 (isotropic), 0.5, 0.9 (forward scattering)
+    gs = [0, 0.5, 0.9]
+    
+    total_sims = len(taus) * len(omegas) * len(gs)
+    print(f"Starting {total_sims} simulations...")
+    
+    with tqdm(total=total_sims) as pbar:
+        for g in gs:
+            for tau in taus:
+                for omega in omegas:
+                    # Run simulation with fewer photons for speed during sweep
+                    r = run_mc_3d(tau, omega, g, N=5000)
+                    
+                    params.append([tau, omega, g])
+                    results.append([
+                        r['escape_fraction_top'], 
+                        r['escape_fraction_bottom'], 
+                        r['absorbed_fraction']
+                    ])
+                    pbar.update(1)
+    
+    # Convert to DataFrame
+    df = pd.DataFrame({
+        'tau_tot': [p[0] for p in params],
+        'omega': [p[1] for p in params],
+        'g': [p[2] for p in params],
+        'escape_fraction_top': [r[0] for r in results],
+        'escape_fraction_bottom': [r[1] for r in results],
+        'absorbed_fraction': [r[2] for r in results]
+    })
+    
+    # Save to CSV
+    output_file = 'monte_carlo_results_3d.csv'
+    df.to_csv(output_file, index=False)
+    print(f"Results saved to {output_file} ({len(df)} rows)")
