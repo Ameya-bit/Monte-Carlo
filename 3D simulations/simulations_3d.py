@@ -23,6 +23,7 @@ class Photon:
         
         self.alive = True
         self.trajectory = [(self.x, self.y, self.z)]
+        self.status = 'alive'  # 'alive', 'absorbed', 'escaped_top', 'escaped_bottom'
 
     def move(self, distance):
         # move a specified distance
@@ -36,8 +37,12 @@ class Photon:
 
     def check_boundaries(self):
         # check if photon escaped
-        if self.z < 0.0 or self.z > 1.0:
+        if self.z < 0.0:
             self.alive = False
+            self.status = 'escaped_bottom'
+        elif self.z > 1.0:
+            self.alive = False
+            self.status = 'escaped_top'
 
     def scatter(self, g):
         """
@@ -134,6 +139,7 @@ def run_mc_3d(tau_tot, omega, g, N=10000):
             if np.random.rand() > omega:
                 # Absorbed
                 p.alive = False
+                p.status = 'absorbed'
                 absorbed_count += 1
             else:
                 # Scattered
@@ -149,6 +155,45 @@ def run_mc_3d(tau_tot, omega, g, N=10000):
         'absorbed_fraction': absorbed_count / N,
         'exit_positions_top': exit_positions_top
     }
+
+def run_detailed_mc_3d(tau_tot, omega, g, N=100):
+    """
+    Run 3D Monte Carlo simulation and return detailed photon objects.
+    Useful for visualization.
+    """
+    slab_thickness = 1.0
+    kappa = tau_tot / slab_thickness
+    
+    photons = []
+    
+    for _ in range(N):
+        p = Photon()
+        
+        while p.alive:
+            # 1. Sample distance
+            d_tau = -np.log(np.random.rand())
+            distance = d_tau / kappa
+            
+            # 2. Move
+            p.move(distance)
+            
+            # 3. Check boundaries
+            p.check_boundaries()
+            if not p.alive:
+                break
+                
+            # 4. Interaction
+            if np.random.rand() > omega:
+                # Absorbed
+                p.alive = False
+                p.status = 'absorbed'
+            else:
+                # Scattered
+                p.scatter(g)
+        
+        photons.append(p)
+                
+    return photons
 
 if __name__ == '__main__':
     params = []
